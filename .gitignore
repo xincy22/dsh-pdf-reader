@@ -1,0 +1,17 @@
+# 本地开发时 node_modules 可能是指向 profile 的链接
+node_modules/
+
+# 运行时产物
+*.log
+.env
+.env.*
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# dev/ 下的实验图与临时产物会入库（体积 3.4 MB），但临时目录不入库
+dev/**/tmp/
+dev/**/*.tmp.png

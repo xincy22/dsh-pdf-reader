@@ -1,0 +1,4 @@
+# dsh-pdf-reader bundle patch — one insert row.
+- insert:
+    - id: pdf-reader
+      name: 'dsh-pdf-reader'

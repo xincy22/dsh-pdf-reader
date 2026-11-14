@@ -1,0 +1,9 @@
+* text=auto eol=lf
+*.md text eol=lf
+*.js text eol=lf
+*.py text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
+# 实验截图按二进制处理，避免换行符被改写
+*.png binary
+*.jpg binary

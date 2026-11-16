@@ -35,7 +35,7 @@
 
 ```sh
 # 从 GitHub 安装（推荐）
-dsh plugin --profile <profile> add git+https://github.com/wunanfang/dsh-pdf-reader
+dsh plugin --profile <profile> add git+https://github.com/xincy22/dsh-pdf-reader
 
 # 或本地目录（开发用，改动立即生效）
 dsh plugin --profile <profile> add ./dsh-pdf-reader

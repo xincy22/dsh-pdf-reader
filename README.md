@@ -35,7 +35,7 @@ Prerequisites: DeepSeek Harness 0.2.x, and a local Python with `pymupdf` and `py
 
 ```sh
 # From GitHub (recommended)
-dsh plugin --profile <profile> add git+https://github.com/wunanfang/dsh-pdf-reader
+dsh plugin --profile <profile> add git+https://github.com/xincy22/dsh-pdf-reader
 
 # Or from a local directory (development; edits apply immediately)
 dsh plugin --profile <profile> add ./dsh-pdf-reader

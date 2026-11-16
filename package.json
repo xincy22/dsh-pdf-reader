@@ -42,13 +42,13 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/wunanfang/dsh-pdf-reader.git"
+    "url": "git+https://github.com/xincy22/dsh-pdf-reader.git"
   },
-  "homepage": "https://github.com/wunanfang/dsh-pdf-reader#readme",
+  "homepage": "https://github.com/xincy22/dsh-pdf-reader#readme",
   "bugs": {
-    "url": "https://github.com/wunanfang/dsh-pdf-reader/issues"
+    "url": "https://github.com/xincy22/dsh-pdf-reader/issues"
   },
-  "author": "wunanfang",
+  "author": "xincy22 <xincy22@mails.tsinghua.edu.cn>",
   "scripts": {
     "test": "node --test dev/e2e/*.test.mjs"
   }

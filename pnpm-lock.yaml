@@ -1,0 +1,22 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: false
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      mupdf:
+        specifier: ~1.28.6
+        version: 1.28.6
+
+packages:
+
+  mupdf@1.28.6:
+    resolution: {integrity: sha512-LsNqk3a9TNJGjJKWVOUK1YMlWJNxFh8bIf+SSxGI+A+WXDlkwc4R2PW/n1qINb4YpqZfOazjPdRqw95WpmCrfw==}
+
+snapshots:
+
+  mupdf@1.28.6: {}

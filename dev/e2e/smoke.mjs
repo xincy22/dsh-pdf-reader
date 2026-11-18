@@ -5,7 +5,7 @@
  * C:\Users\xincy\.dsh\plugins\dsh-pdf-reader，换个机器或换个目录就跑不动。
  * 现在按 import.meta.url 反推仓库根，任何 checkout 位置都能用。
  *
- * 跑法：node dev/e2e/smoke.mjs <某个PDF>      不传 PDF 时只做注册检查
+ * 跑法：node dev/e2e/smoke.mjs <某个PDF> [页码]      不传 PDF 时只做注册检查
  */
 import { pathToFileURL } from 'node:url';
 import { existsSync } from 'node:fs';
@@ -48,7 +48,7 @@ if (!existsSync(pdf)) {
 }
 
 const t0 = Date.now();
-const res = await registered.execute({ path: pdf, pages: '5,16', withImages: true });
+const res = await registered.execute({ path: pdf, pages: process.argv[3] ?? '1-2', withImages: true });
 console.log('execute: blocks=' + res.blocks.length + ' imageCount=' + res.imageCount
   + ' pageCount=' + res.pageCount + ' pages=' + res.pagesRead + ' ms=' + (Date.now() - t0));
 

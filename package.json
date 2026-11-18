@@ -1,7 +1,7 @@
 {
   "name": "dsh-pdf-reader",
   "version": "0.0.1",
-  "description": "DeepSeek Harness tool plugin: read PDFs as Markdown with figures inlined in reading order, powered by PyMuPDF",
+  "description": "DeepSeek Harness tool plugin: read PDFs in reading order with figures inlined as images. Pure JavaScript + MuPDF WebAssembly, no Python or system tools.",
   "type": "module",
   "main": "./src/index.js",
   "exports": {
@@ -24,7 +24,11 @@
     }
   },
   "engines": {
-    "dsh": ">=0.2.0 <0.3.0-0"
+    "dsh": ">=0.2.0 <0.3.0-0",
+    "node": ">=22"
+  },
+  "dependencies": {
+    "mupdf": "~1.28.6"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
@@ -36,7 +40,7 @@
     "plugin",
     "pdf",
     "pdf-to-markdown",
-    "pymupdf",
+    "mupdf",
     "figure-extraction",
     "tool"
   ],
@@ -50,6 +54,6 @@
   },
   "author": "xincy22 <xincy22@mails.tsinghua.edu.cn>",
   "scripts": {
-    "test": "node --test dev/e2e/*.test.mjs"
+    "test": "node --test test/"
   }
 }

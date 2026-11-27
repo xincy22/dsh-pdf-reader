@@ -1,0 +1,16 @@
+{
+  "meta": {
+    "title": "PDF Reader",
+    "description": "Read PDFs in reading order with figures inlined as images using MuPDF WebAssembly."
+  },
+  "config": {
+    "dpi": {
+      "title": "Default figure DPI",
+      "description": "Default resolution (72-300) when rendering PDF figures as images."
+    },
+    "maxImages": {
+      "title": "Max images per call",
+      "description": "Maximum number of figure images (0-100) attached in a single tool call."
+    }
+  }
+}

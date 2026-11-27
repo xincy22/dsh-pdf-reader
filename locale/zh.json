@@ -1,0 +1,16 @@
+{
+  "meta": {
+    "title": "PDF 阅读器",
+    "description": "按阅读顺序读取 PDF，并将插图以内联图片形式返回（基于 MuPDF WebAssembly）。"
+  },
+  "config": {
+    "dpi": {
+      "title": "默认插图 DPI",
+      "description": "将 PDF 插图渲染为图片时的默认分辨率（72–300）。"
+    },
+    "maxImages": {
+      "title": "单次最大图片数",
+      "description": "单次工具调用中最多附带的插图数量（0–100）。"
+    }
+  }
+}

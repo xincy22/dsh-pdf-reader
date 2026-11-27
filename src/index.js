@@ -22,6 +22,19 @@ export const inject = ['tools'];
 
 const MAX_FILE_BYTES = 256 * 1024 * 1024;
 const DEFAULT_DPI = 150;
+const DEFAULT_MAX_IMAGES = 20;
+
+const z = await import('@deepseek-ai/schemastery').then((m) => m.default ?? m).catch(() => null);
+
+export const Config = z
+  ? z.object({
+      dpi: z.natural().min(72).max(300).default(DEFAULT_DPI).description('Default resolution (72-300) for figure images.').volatile(),
+      maxImages: z.natural().min(0).max(100).default(DEFAULT_MAX_IMAGES).description('Maximum number of figure images attached per call (0-100).').volatile(),
+    })
+  : (input = {}) => ({
+      dpi: clampInt(readScalar(input?.dpi), 72, 300, DEFAULT_DPI),
+      maxImages: clampInt(readScalar(input?.maxImages), 0, 100, DEFAULT_MAX_IMAGES),
+    });
 
 const DESCRIPTION = [
   'Read pages of a PDF in reading order, with figures as images placed where they appear.',
@@ -67,6 +80,13 @@ function optional(ctx, service) {
   try { return ctx.get?.(service) ?? undefined; } catch { return undefined; }
 }
 
+function readScalar(value) {
+  if (value && typeof value === 'object' && typeof value.get === 'function') {
+    return value.get();
+  }
+  return value;
+}
+
 /** Resolve and read the PDF through the Harness filesystem when mounted, so sandbox rules apply. */
 async function loadPdf(ctx, input, exec) {
   const fs = optional(ctx, 'fs');
@@ -97,9 +117,10 @@ async function modelSeesImages(ctx, exec) {
   const agent = exec?.agent;
   if (!llm || !agent) return true;
   try {
+    const current = agent.model?.current?.();
     const header = agent.session?.requestHeader?.()?.config;
-    const model = header?.model ?? agent.options?.model;
-    const provider = header?.provider ?? agent.options?.provider;
+    const model = current?.model ?? header?.model ?? agent.options?.model;
+    const provider = current?.provider ?? header?.provider ?? agent.options?.provider;
     if (!model || !provider) return true;
     const info = await llm.resolveModelInfo(provider, model, exec.signal);
     return !Array.isArray(info?.inputModalities) || info.inputModalities.includes('image');
@@ -115,8 +136,6 @@ function clampInt(v, lo, hi, dflt) {
 
 export function apply(ctx, config = {}) {
   const reader = new PdfReader();
-  const defaultDpi = clampInt(config.dpi, 72, 300, DEFAULT_DPI);
-  const maxImages = clampInt(config.maxImages, 0, 100, 20);
 
   const dispose = ctx.tools.register({
     name: 'pdf_read',
@@ -139,6 +158,9 @@ export function apply(ctx, config = {}) {
     async execute(args, exec) {
       if (typeof args?.path !== 'string' || !args.path.trim()) throw new Error('path is required');
       const { bytes, display } = await loadPdf(ctx, args.path.trim(), exec);
+
+      const defaultDpi = clampInt(readScalar(config?.dpi), 72, 300, DEFAULT_DPI);
+      const maxImages = clampInt(readScalar(config?.maxImages), 0, 100, DEFAULT_MAX_IMAGES);
 
       const attachments = optional(ctx, 'attachments');
       const notes = [];

@@ -7,7 +7,8 @@ import { assertSupportedJsonSchema } from './schema-subset.js';
 import * as plugin from '../src/index.js';
 import { makePdf, paperPage } from './fixture.js';
 
-function harness({ attachments = true, imageModel = true, limits = {} } = {}) {
+
+function harness({ attachments = true, imageModel = true, limits = {}, config = {}, resolveModelInfo } = {}) {
   const saved = [];
   let tool;
   let disposed = false;
@@ -20,13 +21,15 @@ function harness({ attachments = true, imageModel = true, limits = {} } = {}) {
       },
       isAttachmentError: () => false,
     },
-    llm: { resolveModelInfo: async () => ({ inputModalities: imageModel ? ['text', 'image'] : ['text'] }) },
+    llm: {
+      resolveModelInfo: resolveModelInfo ?? (async () => ({ inputModalities: imageModel ? ['text', 'image'] : ['text'] })),
+    },
   };
   const ctx = {
     tools: { register(def) { tool = def; return () => { disposed = true; }; } },
     get: (name) => services[name] || undefined,
   };
-  const dispose = plugin.apply(ctx, {});
+  const dispose = plugin.apply(ctx, config);
   const exec = { signal: new AbortController().signal, agent: { options: { provider: 'p', model: 'm' }, session: { requestHeader: () => undefined } } };
   return { tool, saved, exec, dispose: () => { dispose(); return disposed; } };
 }
@@ -119,6 +122,105 @@ test('cancellation stops the read', async () => {
     await assert.rejects(h.tool.execute({ path: pdf.file }, { ...h.exec, signal: ac.signal }), /stopped by user/);
     const value = await h.tool.execute({ path: pdf.file, withImages: false }, h.exec);
     assert.equal(value.pageCount, 1, 'reader recovers after a cancelled call');
+  } finally {
+    pdf.cleanup();
+    h.dispose();
+  }
+});
+
+test('volatile config refs update dpi and maxImages between execute calls', async () => {
+  let liveDpi = 72;
+  let liveMaxImages = 2;
+  const h = harness({
+    config: {
+      dpi: { get: () => liveDpi },
+      maxImages: { get: () => liveMaxImages },
+    },
+  });
+  const pdf = tempPdf([paperPage(), paperPage()]);
+  try {
+    const first = await h.tool.execute({ path: pdf.file, pages: '1-2' }, h.exec);
+    assert.equal(first.figureCount, 2);
+    assert.equal(first.imageCount, 2);
+    const lowDpiBytes = h.saved[0].bytes;
+
+    liveDpi = 300;
+    liveMaxImages = 1;
+
+    const second = await h.tool.execute({ path: pdf.file, pages: '1-2' }, h.exec);
+    assert.equal(second.figureCount, 2);
+    assert.equal(second.imageCount, 1);
+    const highDpiBytes = h.saved[2].bytes;
+    assert.ok(highDpiBytes > lowDpiBytes, `expected 300 DPI PNG (${highDpiBytes} B) > 72 DPI PNG (${lowDpiBytes} B)`);
+  } finally {
+    pdf.cleanup();
+    h.dispose();
+  }
+});
+
+test('Config schema normalizes defaults and exposes volatile metadata when schemastery is present', () => {
+  assert.equal(typeof plugin.Config, 'function');
+  const readVal = (v) => (v && typeof v === 'object' && typeof v.get === 'function' ? v.get() : v);
+
+  const defaults = plugin.Config({});
+  assert.equal(readVal(defaults.dpi), 150);
+  assert.equal(readVal(defaults.maxImages), 20);
+
+  const custom = plugin.Config({ dpi: 200, maxImages: 5 });
+  assert.equal(readVal(custom.dpi), 200);
+  assert.equal(readVal(custom.maxImages), 5);
+
+  if (typeof plugin.Config.toJSON === 'function') {
+    const json = plugin.Config.toJSON();
+    const rootDict = json.refs[json.uid].dict;
+    const dpiNode = json.refs[rootDict.dpi];
+    const maxImagesNode = json.refs[rootDict.maxImages];
+    assert.equal(dpiNode.meta.volatile, true);
+    assert.equal(dpiNode.meta.min, 72);
+    assert.equal(dpiNode.meta.max, 300);
+    assert.equal(dpiNode.meta.default, 150);
+    assert.equal(dpiNode.meta.step, 1);
+    assert.equal(maxImagesNode.meta.volatile, true);
+    assert.equal(maxImagesNode.meta.min, 0);
+    assert.equal(maxImagesNode.meta.max, 100);
+    assert.equal(maxImagesNode.meta.default, 20);
+    assert.equal(maxImagesNode.meta.step, 1);
+  }
+});
+
+test('agent.model.current() takes priority over stale requestHeader and agent.options', async () => {
+  const resolvedCalls = [];
+  const h = harness({
+    resolveModelInfo: async (provider, model) => {
+      resolvedCalls.push({ provider, model });
+      return { inputModalities: model === 'vision-model' ? ['text', 'image'] : ['text'] };
+    },
+  });
+  const pdf = tempPdf([paperPage()]);
+  try {
+    const execTextCurrent = {
+      signal: new AbortController().signal,
+      agent: {
+        model: { current: () => ({ provider: 'p-cur', model: 'text-only-model' }) },
+        options: { provider: 'p-opt', model: 'vision-model' },
+        session: { requestHeader: () => ({ config: { provider: 'p-hdr', model: 'vision-model' } }) },
+      },
+    };
+    const r1 = await h.tool.execute({ path: pdf.file }, execTextCurrent);
+    assert.equal(r1.imageCount, 0);
+    assert.deepEqual(resolvedCalls[0], { provider: 'p-cur', model: 'text-only-model' });
+
+    const execVisionCurrent = {
+      signal: new AbortController().signal,
+      agent: {
+        model: { current: () => ({ provider: 'p-cur', model: 'vision-model' }) },
+        options: { provider: 'p-opt', model: 'text-only-model' },
+        session: { requestHeader: () => ({ config: { provider: 'p-hdr', model: 'text-only-model' } }) },
+      },
+    };
+    const r2 = await h.tool.execute({ path: pdf.file }, execVisionCurrent);
+    assert.equal(r2.imageCount, 1);
+    assert.deepEqual(resolvedCalls[1], { provider: 'p-cur', model: 'vision-model' });
   } finally {
     pdf.cleanup();
     h.dispose();
